@@ -4,10 +4,14 @@ use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware};
 
 use cfg_block::*;
+use dotenvy::*;
 use env_logger::Env;
+#[cfg(feature = "TSL")]
 use rustls::{Certificate, PrivateKey, ServerConfig};
 #[cfg(feature = "TSL")]
 use rustls_pemfile::{certs, pkcs8_private_keys};
+mod security;
+use security::*;
 
 use std::{env, fs::File, io::BufReader};
 
@@ -16,12 +20,11 @@ use log::*;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // get env vars
-    dotenv::dotenv().ok();
+    dotenv().ok();
 
-    let db_url =
-        env::var("DATABASE_URL").unwrap_or_else(|_| panic!("{}", fl!("Database_url_missing")));
-    let host = env::var("HOST").expect("HOST is not set in .env file");
-    let port = env::var("PORT").expect("PORT is not set in .env file");
+    let db_url = env::var("DATABASE_URL").unwrap_or_else(|_| panic!("{}", "Database_url_missing"));
+    let host = env::var("HOST").expect("HOST is not set in .env");
+    let port = env::var("PORT").expect("PORT is not set in .env");
     let tls_key_file = env::var("KEYFILE").expect("KEYFILE is not set in .env file");
     let tls_cert_file = env::var("CERTFILE").expect("CERTFILE is not set in .env file");
     let server_url = format!("{}:{}", host, port);
