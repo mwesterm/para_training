@@ -6,9 +6,9 @@ use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware}
 use cfg_block::*;
 use dotenvy::*;
 use env_logger::Env;
-#[cfg(feature = "TSL")]
+#[cfg(feature = "USE_TSL")]
 use rustls::{Certificate, PrivateKey, ServerConfig};
-#[cfg(feature = "TSL")]
+#[cfg(feature = "USE_TSL")]
 use rustls_pemfile::{certs, pkcs8_private_keys};
 mod security;
 use security::*;
@@ -16,6 +16,8 @@ use security::*;
 use std::{env, fs::File, io::BufReader};
 
 use log::*;
+
+use crate::security::tls::load_certs;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -63,10 +65,9 @@ async fn main() -> std::io::Result<()> {
         .service(student_destroy)*/
     });
     //
-    /*     if cfg!(RUN_TLS) {
+        if cfg!(RUN_TLS) {
         let server = server.bind_rustls(&server_url, server_config)?;
     } else {
-        */
     let server = server.bind(&server_url)?;
 
     server.run().await?;
