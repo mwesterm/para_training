@@ -6,9 +6,7 @@ use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware}
 use cfg_block::*;
 use dotenvy::*;
 use env_logger::Env;
-#[cfg(feature = "USE_TSL")]
 use rustls::{Certificate, PrivateKey, ServerConfig};
-#[cfg(feature = "USE_TSL")]
 use rustls_pemfile::{certs, pkcs8_private_keys};
 mod security;
 use security::*;
@@ -35,6 +33,7 @@ async fn main() -> std::io::Result<()> {
     let env = Env::default().default_filter_or(log_level);
     env_logger::init_from_env(env);
     info!("Logging started");
+
     // establish connection to database
     let server_config = match load_certs(&tls_cert_file, &tls_key_file) {
         Err(e) => {
@@ -65,11 +64,7 @@ async fn main() -> std::io::Result<()> {
         .service(student_destroy)*/
     });
     //
-        if cfg!(RUN_TLS) {
-        let server = server.bind_rustls(&server_url, server_config)?;
-    } else {
-    let server = server.bind(&server_url)?;
-
+    let server = server.bind_rustls(&server_url, server_config)?;
     server.run().await?;
     Ok(())
 }
