@@ -1,17 +1,16 @@
-use actix_web::{cookie::Key, web, web::Data, App, HttpServer};
+use actix_web::{cookie::Key, web, App, HttpServer};
 
 use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware};
 
-use cfg_block::*;
 use dotenvy::*;
 use env_logger::Env;
-use rustls::{Certificate, PrivateKey, ServerConfig};
-use rustls_pemfile::{certs, pkcs8_private_keys};
-mod security;
-use security::*;
+use std::env;
 
-use std::{env, fs::File, io::BufReader};
+mod db;
+mod error_handler;
+mod security;
+use db::connection::*;
 
 use log::*;
 
@@ -22,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     // get env vars
     dotenv().ok();
 
-    let db_url = env::var("DATABASE_URL").unwrap_or_else(|_| panic!("{}", "Database_url_missing"));
+    env::var("DATABASE_URL").unwrap_or_else(|_| panic!("{}", "Database_url_missing")); //nur zum checlen ob env ok ist
     let host = env::var("HOST").expect("HOST is not set in .env");
     let port = env::var("PORT").expect("PORT is not set in .env");
     let tls_key_file = env::var("KEYFILE").expect("KEYFILE is not set in .env file");
@@ -33,8 +32,10 @@ async fn main() -> std::io::Result<()> {
     let env = Env::default().default_filter_or(log_level);
     env_logger::init_from_env(env);
     info!("Logging started");
-
     // establish connection to database
+    init_db_connectons();
+    info!("DB Connections established");
+
     let server_config = match load_certs(&tls_cert_file, &tls_key_file) {
         Err(e) => {
             error!("error open cert or  key file: {}", e);
@@ -44,11 +45,13 @@ async fn main() -> std::io::Result<()> {
     };
     info!("Key and Cert loaded");
 
+    init_db_connectons();
+
     let secret_key = Key::generate();
     let redis_connection_string = "127.0.0.1:6379";
 
     // create server and try to serve over socket if possible
-    let server = HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         App::new()
             //            .wrap(IdentityMiddleware::default())
             .wrap(SessionMiddleware::new(
@@ -64,7 +67,23 @@ async fn main() -> std::io::Result<()> {
         .service(student_destroy)*/
     });
     //
-    let server = server.bind_rustls(&server_url, server_config)?;
+    let mut listenfd = listenfd::ListenFd::from_env();
+
+    server = match listenfd.take_tcp_listener(0)? {
+        Some(listener) => {
+            info!("Restating Web- Server");
+            server.listen(listener)?
+        }
+        None => {
+            if cfg!(USE_TLS) {
+                info!("Web-Server starting (SSL)");
+                server.bind_rustls(&server_url, server_config)?
+            } else {
+                info!("Web-Server starting (Non-SSL)");
+                server.bind(format!("{}:{}", host, port))?
+            }
+        }
+    };
     server.run().await?;
     Ok(())
 }

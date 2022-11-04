@@ -13,13 +13,17 @@ actix-identity = "0.5"
 actix-web = { version = "4.2", features = ["rustls"] }
 actix-session = { version = "0.7", features = ["redis-actor-session"] }
 actix-redis = "0.12.0"
+r2d2 = "0.8"
+
+listenfd = "1.0.0"
+chrono = { version = "0.4", features = ["serde"] }
+
 ##
 #actix-casbin = {version = "0.4.2",features = ["runtime-tokio"]}
 #actix-casbin-auth = {version="0.4.4",features = ["runtime-tokio"]}
 casbin = "2.0.9"
 
 #tls
-
 rustls = { version = "0.20" }
 rustls-pemfile = { version = "1.0" }
 

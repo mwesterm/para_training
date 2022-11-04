@@ -1,5 +1,1 @@
-impl AppUser {
-
-
-  pub fb
-}
+impl AppUser {}
