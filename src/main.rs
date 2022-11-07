@@ -9,6 +9,7 @@ use std::env;
 
 mod db;
 mod error_handler;
+mod rest;
 mod security;
 use db::connection::*;
 
@@ -49,26 +50,20 @@ async fn main() -> std::io::Result<()> {
 
     let secret_key = Key::generate();
     let redis_connection_string = "127.0.0.1:6379";
-
     // create server and try to serve over socket if possible
     let mut server = HttpServer::new(move || {
         App::new()
-            //            .wrap(IdentityMiddleware::default())
+            .wrap(IdentityMiddleware::default())
             .wrap(SessionMiddleware::new(
                 RedisActorSessionStore::new(redis_connection_string),
                 secret_key.clone(),
             ))
             .route("/", web::get().to(|| async { "Actix REST API" }))
-        // .service(student_index)
-        // .service(student_show)
-        //.service(login)
-        /*              .service(student_create)
-        .service(student_update)
-        .service(student_destroy)*/
+            .configure(rest::config_routes)
     });
-    //
-    let mut listenfd = listenfd::ListenFd::from_env();
 
+    //Start server or connect to socket opend by systemfd
+    let mut listenfd = listenfd::ListenFd::from_env();
     server = match listenfd.take_tcp_listener(0)? {
         Some(listener) => {
             info!("Restating Web- Server");
