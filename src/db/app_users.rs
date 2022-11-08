@@ -1,18 +1,26 @@
+use crate::db::schema::app_users;
+use crate::db::schema::app_users::dsl;
 use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use diesel::{insert_into, prelude::*, select};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::db::{connection::get_db_connection, schema::app_users::dsl::*};
 use crate::error_handler::CustomError;
 
-#[derive(Queryable, Debug, Serialize, Deserialize)]
-pub struct AppUser {
-    pub id: i32,
-    pub username: String,
-    pub password: Option<String>,
-    pub active: Option<bool>,
+use super::models::AppUser;
 
-    #[serde(skip_serializing)]
+#[derive(Deserialize, Insertable)]
+#[diesel(table_name=app_users)]
+pub struct NewAppUser<'a> {
+    #[serde(default)]
+    id: uuid::Uuid,
+    #[serde(default)]
+    pub username: &'a str,
+    #[serde(default)]
+    pub password: &'a str,
+    #[serde(default)]
+    pub active: bool,
     pub create_date: NaiveDateTime,
 }
 
@@ -21,5 +29,16 @@ impl AppUser {
         let conn = &mut get_db_connection()?;
         let app_users_res = app_users.load::<AppUser>(conn)?;
         Ok(app_users_res)
+    }
+
+    pub async fn add_app_user(new_app_user: &mut AppUser) -> Result<(), CustomError> {
+        let conn = &mut get_db_connection()?;
+        new_app_user.id = Uuid::new_v4();
+
+        let result = insert_into(app_users)
+            .values(&*new_app_user)
+            .execute(conn)?;
+
+        Ok(())
     }
 }

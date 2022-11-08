@@ -1,4 +1,4 @@
-use actix_web::{cookie::Key, web, App, HttpServer};
+use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 
 use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware};
@@ -53,6 +53,7 @@ async fn main() -> std::io::Result<()> {
     // create server and try to serve over socket if possible
     let mut server = HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())
             .wrap(IdentityMiddleware::default())
             .wrap(SessionMiddleware::new(
                 RedisActorSessionStore::new(redis_connection_string),
@@ -66,7 +67,7 @@ async fn main() -> std::io::Result<()> {
     let mut listenfd = listenfd::ListenFd::from_env();
     server = match listenfd.take_tcp_listener(0)? {
         Some(listener) => {
-            info!("Restating Web- Server");
+            info!("Restating Web-Server");
             server.listen(listener)?
         }
         None => {
