@@ -1,5 +1,3 @@
-use diesel::prelude::*;
-
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
@@ -8,6 +6,6 @@ diesel::table! {
         username -> Varchar,
         password -> Nullable<Varchar>,
         active -> Nullable<Bool>,
-        create_date ->Nullable<Timestamp>,
+        create_date -> Timestamp,
     }
 }

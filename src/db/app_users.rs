@@ -1,9 +1,4 @@
-use std::time::SystemTime;
-
-use actix_web::App;
-
-use chrono::{DateTime, NaiveDateTime, Utc};
-use diesel::data_types::PgTimestamp;
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -16,13 +11,12 @@ pub struct AppUser {
     pub username: String,
     pub password: Option<String>,
     pub active: Option<bool>,
-    pub create_date: SystemTime,
+
+    #[serde(skip_serializing)]
+    pub create_date: NaiveDateTime,
 }
 
 impl AppUser {
-    pub fn test_fn() -> bool {
-        true
-    }
     pub async fn get_all_app_users() -> Result<Vec<AppUser>, CustomError> {
         let conn = &mut get_db_connection()?;
         let app_users_res = app_users.load::<AppUser>(conn)?;

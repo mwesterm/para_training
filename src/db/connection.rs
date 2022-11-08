@@ -18,7 +18,7 @@ lazy_static! {
 
 pub fn init_db_connectons() {
     lazy_static::initialize(&POOL);
-    let conn = get_db_connection().expect("Failed to get db connection");
+    get_db_connection().expect("Failed to get db connection"); //Test to get connection
 }
 
 pub fn get_db_connection() -> Result<DbConnection, CustomError> {

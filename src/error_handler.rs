@@ -1,6 +1,7 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 use diesel::result::Error as DieselError;
+use log::*;
 use serde::Deserialize;
 use serde_json::json;
 use std::fmt;
@@ -28,13 +29,15 @@ impl fmt::Display for CustomError {
 
 impl From<DieselError> for CustomError {
     fn from(error: DieselError) -> CustomError {
-        match error {
+        let result = match error {
             DieselError::DatabaseError(_, err) => CustomError::new(409, err.message().to_string()),
             DieselError::NotFound => {
-                CustomError::new(404, "The employee record not found".to_string())
+                CustomError::new(404, "The searched record not found".to_string())
             }
             err => CustomError::new(500, format!("Unknown Diesel error: {}", err)),
-        }
+        };
+        error!("Diesel-Error: {}", result);
+        result
     }
 }
 
