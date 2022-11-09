@@ -4,6 +4,7 @@ mod app_users;
 mod students;
 
 pub fn config_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/login").route(web::post().to(crate::security::login::user_login)));
     cfg.service(
         web::resource("/appUsers")
             .route(web::get().to(app_users::app_users_index))

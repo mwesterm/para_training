@@ -68,16 +68,11 @@ async fn main() -> std::io::Result<()> {
     server = match listenfd.take_tcp_listener(0)? {
         Some(listener) => {
             info!("Restating Web-Server");
-            server.listen(listener)?
+            server.listen_rustls(listener, server_config)?
         }
         None => {
-            if cfg!(USE_TLS) {
-                info!("Web-Server starting (SSL)");
-                server.bind_rustls(&server_url, server_config)?
-            } else {
-                info!("Web-Server starting (Non-SSL)");
-                server.bind(format!("{}:{}", host, port))?
-            }
+            info!("Web-Server starting (SSL)");
+            server.bind_rustls(&server_url, server_config)?
         }
     };
     server.run().await?;
