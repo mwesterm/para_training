@@ -1,8 +1,8 @@
 use actix_identity::Identity;
-use actix_web::{web, App, HttpResponse, Responder};
-use log::{debug, info};
+use actix_web::{web, HttpResponse, Responder};
+use log::{debug, error, info};
 
-use crate::db::{app_users::*, models::AppUser};
+use crate::db::models::AppUser;
 
 pub async fn app_users_index(user: Option<Identity>) -> impl Responder {
     match user {
@@ -24,6 +24,11 @@ pub async fn app_users_create(
     info!("Post AppUser");
     debug!("New User  : {:?}", imut_new_app_user);
     let mut new_app_user = imut_new_app_user.into_inner();
-    AppUser::add_app_user(&mut new_app_user).await;
-    HttpResponse::Ok().body("Ok")
+    match AppUser::add_app_user(&mut new_app_user).await {
+        Err(e) => {
+            error!("error:{:?}", e);
+            HttpResponse::InternalServerError().body("error")
+        }
+        Ok(()) => HttpResponse::Ok().body("Ok"),
+    }
 }

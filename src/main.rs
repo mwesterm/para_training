@@ -1,7 +1,7 @@
 use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};
 
-use actix_identity::{Identity, IdentityMiddleware};
-use actix_session::{storage::RedisActorSessionStore, Session, SessionMiddleware};
+use actix_identity::IdentityMiddleware;
+use actix_session::{storage::RedisActorSessionStore, SessionMiddleware};
 
 use dotenvy::*;
 use env_logger::Env;

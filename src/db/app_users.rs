@@ -1,8 +1,7 @@
 use crate::db::schema::app_users;
-use crate::db::schema::app_users::dsl;
 use chrono::NaiveDateTime;
-use diesel::{insert_into, prelude::*, select};
-use serde::{Deserialize, Serialize};
+use diesel::{insert_into, prelude::*};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::db::{connection::get_db_connection, schema::app_users::dsl::*};
@@ -35,7 +34,7 @@ impl AppUser {
         let conn = &mut get_db_connection()?;
         new_app_user.id = Uuid::new_v4();
 
-        let result = insert_into(app_users)
+        insert_into(app_users)
             .values(&*new_app_user)
             .execute(conn)?;
 
