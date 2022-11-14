@@ -12,6 +12,11 @@ pub fn config_routes(cfg: &mut web::ServiceConfig) {
     );
 
     cfg.service(
+        web::resource("/appUsers/find_by_name/{user_name")
+            .route(web::get().to(app_users::app_users_find_by_name)),
+    );
+
+    cfg.service(
         web::resource("/students")
             .route(web::get().to(students::students_index))
             .route(web::post().to(students::students_create)),

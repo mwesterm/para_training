@@ -1,6 +1,6 @@
-use crate::error_handler::CustomError;
-use diesel::pg::PgConnection;
-use diesel::r2d2::ConnectionManager;
+use crate::error_handler::ORMError;
+
+use diesel::{r2d2::ConnectionManager, PgConnection};
 use lazy_static::lazy_static;
 use r2d2;
 use std::env;
@@ -21,7 +21,11 @@ pub fn init_db_connectons() {
     get_db_connection().expect("Failed to get db connection"); //Test to get connection
 }
 
-pub fn get_db_connection() -> Result<DbConnection, CustomError> {
+pub fn get_db_connection() -> Result<DbConnection, ORMError> {
     POOL.get()
-        .map_err(|e| CustomError::new(500, format!("Failed getting db connection: {}", e)))
+        .map_err(|e| ORMError::ORMDatabaseError(format!("Failed getting db connection: {}", e)))
+}
+
+pub fn get_db_Mut_connection() -> Pool {
+    POOL.clone()
 }

@@ -1,58 +1,81 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
+use argon2::PasswordHash;
 use diesel::result::Error as DieselError;
 use log::*;
-use serde::Deserialize;
 use serde_json::json;
-use std::fmt;
 
-#[derive(Debug, Deserialize)]
-pub struct CustomError {
-    pub error_status_code: u16,
-    pub error_message: String,
+use thiserror;
+
+use crate::db::schema::app_users::password;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ORMError {
+    #[error("ORM Record not found")]
+    ORMNotFound,
+    #[error("Duplicate Record")]
+    ORMNotUnique,
+    #[error("ORM Database-Error")]
+    ORMDatabaseError(String),
+    #[error("ORM Unknowen error")]
+    ORMUnexpectedError,
+
+    #[error("Invalid credentials")]
+    AuthInvalidCredentials,
+    #[error("Auth Unexpected Error")]
+    AuthUnexpectedError,
+    #[error("Not authorized")]
+    AuthNotAuthorized,
 }
 
-impl CustomError {
-    pub fn new(error_status_code: u16, error_message: String) -> CustomError {
-        CustomError {
-            error_status_code,
-            error_message,
-        }
-    }
-}
-
-impl fmt::Display for CustomError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.error_message.as_str())
-    }
-}
-
-impl From<DieselError> for CustomError {
-    fn from(error: DieselError) -> CustomError {
-        let result = match error {
-            DieselError::DatabaseError(_, err) => CustomError::new(409, err.message().to_string()),
-            DieselError::NotFound => {
-                CustomError::new(404, "The searched record not found".to_string())
+impl From<DieselError> for ORMError {
+    fn from(error: DieselError) -> Self {
+        let result: ORMError = match error {
+            DieselError::DatabaseError(_, err) => {
+                ORMError::ORMDatabaseError(err.message().to_string())
             }
-            err => CustomError::new(500, format!("Unknown Diesel error: {}", err)),
+            //DieselError::NotFound => ORMError::NotFound,
+            err => ORMError::ORMUnexpectedError,
         };
         error!("Diesel-Error: {}", result);
         result
     }
 }
 
-impl ResponseError for CustomError {
+impl ResponseError for ORMError {
     fn error_response(&self) -> HttpResponse {
-        let status_code = match StatusCode::from_u16(self.error_status_code) {
-            Ok(status_code) => status_code,
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-
-        let error_message = match status_code.as_u16() < 500 {
-            true => self.error_message.clone(),
-            false => "Internal server error".to_string(),
-        };
-
+        let status_code: StatusCode;
+        let error_message: &str;
+        match self {
+            ORMError::ORMNotFound => {
+                status_code = StatusCode::NOT_FOUND;
+                error_message = "Record not found";
+            }
+            ORMError::ORMNotUnique => {
+                status_code = StatusCode::NOT_ACCEPTABLE;
+                error_message = "Record not unique";
+            }
+            ORMError::ORMDatabaseError(_) => {
+                status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                error_message = "Database Error";
+            }
+            ORMError::ORMUnexpectedError => {
+                status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                error_message = "ORM Unexpected Error";
+            }
+            ORMError::AuthInvalidCredentials => {
+                status_code = StatusCode::UNAUTHORIZED;
+                error_message = "Invalid Credentials";
+            }
+            ORMError::AuthUnexpectedError => {
+                status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                error_message = "Auth Unexpected Error";
+            }
+            ORMError::AuthNotAuthorized => {
+                status_code = StatusCode::UNAUTHORIZED;
+                error_message = "No Access rights";
+            }
+        }
         HttpResponse::build(status_code).json(json!({ "message": error_message }))
     }
 }

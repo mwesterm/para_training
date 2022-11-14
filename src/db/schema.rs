@@ -17,7 +17,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    app_users,
-    students,
-);
+diesel::allow_tables_to_appear_in_same_query!(app_users, students,);

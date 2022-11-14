@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use diesel::{Insertable, Queryable};
+use diesel::{AsChangeset, Insertable, Queryable};
 use serde::{Deserialize, Serialize};
 
 use crate::db::schema::{app_users, students};
@@ -14,7 +14,7 @@ pub struct AppUser {
     pub create_date: Option<NaiveDateTime>,
 }
 
-#[derive(Queryable, Debug, Serialize, Deserialize, Insertable)]
+#[derive(Queryable, Debug, Serialize, Deserialize, Insertable, AsChangeset)]
 pub struct Student {
     #[serde(default)]
     pub id: uuid::Uuid,
